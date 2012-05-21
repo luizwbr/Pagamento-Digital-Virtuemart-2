@@ -194,12 +194,12 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		<input type="hidden" name="cliente_pais" value="BRA"  />
 		<input type="hidden" name="cliente_tel" value="' . $order["details"]["ST"]->phone_1 . '"  />
 		<input type="hidden" name="email" value="' . $order["details"]["ST"]->email . '"  />';
-
+		
 		// valor total do pedido		
 		$html .= '<input type="hidden" name="valor" value="'.number_format(floatval($order['details']['BT']->order_total), 2, ".", "").'" />';
 		$html .= '<input type="hidden" name="tipo_frete" value="'.$method->tipo_frete .'" />';
-		$html .= '<input type="hidden" name="frete" value="'.number_format($order["details"]["ST"]->order_shipment,2,',','.').'" />';	
-
+		$html .= '<input type="hidden" name="frete" value="'.number_format($order["details"]["BT"]->order_shipment ,2,'.','').'" />';	
+	
 		// peso do produto
 		// <input type="hidden" name="item_peso_' . $i . '" value="' . ShopFunctions::convertWeigthUnit($p->product_weight, $p->product_weight_uom, "GR") . '">';
 		foreach ($cart->products as $p) {
@@ -207,8 +207,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 			$html .='<input type="hidden" name="produto_codigo_' . $i . '" value="' . $p->virtuemart_product_id . '">
 				<input type="hidden" name="produto_descricao_' . $i . '" value="' . $p->product_name . '">
 				<input type="hidden" name="produto_qtde_' . $i . '" value="' . $p->quantity . '">
-				<input type="hidden" name="produto_valor_' . $i . '" value="' . number_format(($p->override ? $p->product_override_price : $p->product_price), 2, ",", ".") .' ">';		
-			/*	<input type="hidden" name="produto_extra_' . $i . '" value="' . strip_tags($db1->f('product_attribute')) . '">';					*/
+				<input type="hidden" name="produto_valor_' . $i . '" value="' . number_format($cart->pricesUnformatted[$p->virtuemart_product_id]['salesPrice'], 2, ".", "") .' ">';		
 		}
 		
 		$url 	= JURI::root();
