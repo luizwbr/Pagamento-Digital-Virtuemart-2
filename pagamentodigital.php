@@ -129,7 +129,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 			"Seu pedido foi realizado com sucesso. Voc&ecirc; ser&aacute; direcionado para o site do Pagamento Digital, onde efetuar&aacute; o pagamento da sua compra.")
 		);
 
-		$html = $this->retornaHtmlPagamento( $order, $method, $redir);
+		$html = $this->retornaHtmlPagamento( $order, $method, 1);
 		
 		$novo_status = $method->status_aguardando;
 		return $this->processConfirmedOrderPaymentResponse(1, $cart, $order, $html, $dbValues['payment_name'], $novo_status);
