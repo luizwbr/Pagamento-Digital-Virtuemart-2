@@ -20,8 +20,6 @@ Passo 3 - Na aba configurações, preencha os dados:
 * Chave da Loja: Menu Ferramentas do PgDigital
 * Chave Única de Acesso da Loja: Menu Ferramentas do PgDigital
 * Limite de Parcelamento: Por padrão é 24
-* Mensagem de agradecimento após a compra de Parcelamento: Opcional
-* Mensagem de agradecimento após a compra de Parcelamento: Opcional
 * Aprovado: Status do Pedido quando Aprovada a transação
 * Cancelado: Status do Pedido quando Cancelada a transação
 * Aguardando Pagto: Status do Pedido quando transação Pendente

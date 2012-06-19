@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <install version="1.5" type="plugin" group="vmpayment" method="upgrade">
     <name>Pagamento Digital</name>
-    <creationDate>Maio 2012</creationDate>
+    <creationDate>Junho 2012</creationDate>
     <author>Luiz Felipe Weber</author>
     <authorUrl>http://www.weber.eti.br</authorUrl>
     <copyright>Copyright (C) 2012. All rights reserved.</copyright>
     <license>http://www.gnu.org/licenses/gpl-3.0.html GNU/GPL</license>
-    <version>1.2</version>
+    <version>1.3</version>
     <description>Plugin de pagamento Pagamento Digital
 	&lt;div style=&quot;background:#E5F5FF;border:1px solid #99D6FF;padding:10px;margin:10px; -box-shadow: inset 0px 0px 10px #fff, 0px 0px 5px #ccc; -webkit-box-shadow: inset 0px 0px 10px #fff, 0px 0px 5px #ccc; -moz-box-shadow: inset 0px 0px 10px #fff, 0px 0px 5px #ccc;&quot;&gt;
 		&lt;h1&gt;Plugin de pagamento Pagamento Digital para Virtuemart 2.0.&lt;/h1&gt;
+		&lt;div style=&quot;float:right;width: 20%&quot;&gt;
+		&lt;img src=&quot;../plugins/vmpayment/pagamentodigital/logo_pagamentodigital2.jpg&quot; /&gt;
+		&lt;/div&gt;
 		&lt;div&gt;&lt;em&gt;Passo 1&lt;/em&gt; - Habilite o plugin aqui &lt;a href=&quot;index.php?option=com_plugins&amp;view=plugins&amp;filter_search=pagamento&quot;&gt;Administrar Plugins&lt;/a&gt;&lt;/div&gt;
 		&lt;div&gt;&lt;em&gt;Passo 2&lt;/em&gt; - Instale Plugin por esta tela &lt;a href=&quot;index.php?option=com_virtuemart&amp;view=paymentmethod&quot;&gt;Métodos de pagamento&lt;/a&gt;&lt;/div&gt;
 		&lt;div&gt;&lt;em&gt;Passo 2.1&lt;/em&gt; - &lt;b&gt;Clique em Novo Método de Pagamento&lt;/b&gt; e preencha as informações:&lt;/div&gt;
@@ -35,6 +38,10 @@
 	</description>
     <files>
         <filename plugin="pagamentodigital">pagamentodigital.php</filename>
+	   <filename>licenca-gplv3.txt</filename>
+        <filename>leiame.txt</filename>
+        <filename>gplv3-license.txt</filename>
+        <filename>logo_pagamentodigital2.jpg</filename>
         <folder>imagens</folder>
     </files>
     <params addpath="/administrator/components/com_virtuemart/elements">
