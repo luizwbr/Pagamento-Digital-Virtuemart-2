@@ -25,8 +25,6 @@
 		&lt;div&gt;* Chave da Loja: &lt;b&gt;Menu Ferramentas do PgDigital&lt;/b&gt;&lt;/div&gt;
 		&lt;div&gt;* Chave Única de Acesso da Loja: &lt;b&gt;Menu Ferramentas do PgDigital&lt;/b&gt;&lt;/div&gt;
 		&lt;div&gt;* Limite de Parcelamento: &lt;b&gt;Por padrão é 24&lt;/b&gt;&lt;/div&gt;
-		&lt;div&gt;* Mensagem de agradecimento após a compra de Parcelamento: &lt;b&gt;Opcional&lt;/b&gt;&lt;/div&gt;
-		&lt;div&gt;* Mensagem de agradecimento após a compra de Parcelamento: &lt;b&gt;Opcional&lt;/b&gt;&lt;/div&gt;
 		&lt;div&gt;* Aprovado: &lt;b&gt;Status do Pedido quando Aprovada a transação&lt;/b&gt;&lt;/div&gt;
 		&lt;div&gt;* Cancelado: &lt;b&gt;Status do Pedido quando Cancelada a transação&lt;/b&gt;&lt;/div&gt;
 		&lt;div&gt;* Aguardando Pagto: &lt;b&gt;Status do Pedido quando transação Pendente&lt;/b&gt;&lt;/div&gt;
@@ -54,7 +52,6 @@
 		
 		<param type="spacer" default="Configurações extras" />
 		<param name="limite_parcelamento" type="text" size="5"  label="Limite de Parcelamento" description="Limite de parcelamento para o usuário da loja pagar." />
-		<param name="mensagem_agradecimento" type="textarea" label="Mensagem de agradecimento após a compra" class="tinymce" rows="20" cols="40" />
 		<param name="segundos_redirecionar" type="text"  label="Segundos para Redirecionar Automaticamente" description="Segundos para Redirecionar automaticamente para o pagamento" size="2" default="5" />
 		
         <param type="spacer" default="Status postado pelo Pagamento Digital" />

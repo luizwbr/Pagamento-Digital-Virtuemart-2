@@ -41,7 +41,6 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             'cod_loja' => array('', 'string'),
             'chave' => array('', 'string'),
             'limite_parcelamento' => array('', 'int'),
-            'mensagem_agradecimento'=> array('', 'string'),
             'status_aprovado'=> array('', 'char'),
             'status_cancelado'=> array('', 'char'),
             'status_aguardando'=> array('', 'char'),
@@ -101,12 +100,6 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             return false;
         }
 		// $params = new JParameter($payment->payment_params);
-        $lang = JFactory::getLanguage();
-        $filename = 'com_virtuemart';
-        $lang->load($filename, JPATH_ADMINISTRATOR);
-        $vendorId = 0;
-
-        $html = "";
 
         if (!class_exists('VirtueMartModelOrders'))
             require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
@@ -132,7 +125,23 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
         $dbValues['tax_id'] = $method->tax_id;
         $this->storePSPluginInternalData($dbValues);
 
-        $html = '<table>' . "\n";
+		JFactory::getApplication()->enqueueMessage(utf8_encode(
+			"Seu pedido foi realizado com sucesso. Voc&ecirc; ser&aacute; direcionado para o site do Pagamento Digital, onde efetuar&aacute; o pagamento da sua compra.")
+		);
+
+		$html = $this->retornaHtmlPagamento( $order, $method, $redir);
+		
+		$novo_status = $method->status_aguardando;
+		return $this->processConfirmedOrderPaymentResponse(1, $cart, $order, $html, $dbValues['payment_name'], $novo_status);
+    }
+
+	function retornaHtmlPagamento( $order, $method, $redir ) {
+		$lang = JFactory::getLanguage();
+        $filename = 'com_virtuemart';
+        $lang->load($filename, JPATH_ADMINISTRATOR);
+        $vendorId = 0;
+		
+		$html = '<table>' . "\n";
         $html .= $this->getHtmlRow('STANDARD_PAYMENT_INFO', $dbValues['payment_name']);
         if (!empty($payment_info)) {
             $lang = & JFactory::getLanguage();
@@ -143,13 +152,13 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             }
             $html .= $this->getHtmlRow('STANDARD_PAYMENTINFO', $payment_info);
         }
-        if (!class_exists('VirtueMartModelCurrency'))
+        if (!class_exists('VirtueMartModelCurrency')) {
             require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
+		}
 
         $currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
         $html .= $this->getHtmlRow('STANDARD_ORDER_NUMBER', $order['details']['BT']->order_number);
         $html .= $this->getHtmlRow('STANDARD_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
-        //$html .= $this->getHtmlRow('pagamentodigital_AMOUNT', $totalInPaymentCurrency.' '.$currency_code_3);
         $html .= '</table>' . "\n";
 	
         $html .= '<form name="pagdigital" id="pagdigital" action="https://www.pagamentodigital.com.br/checkout/pay/" method="post">  ';
@@ -157,11 +166,9 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		$html .= '<input type="hidden" name="cod_loja" value="'.$method->cod_loja.'"  />';
 		$html .= '<input type="hidden" name="chave" value="'.$method->chave.'"  />';
 		$html .= '<input name="tipo_integracao" type="hidden" value="PAD">';
-		$html .= '<input type="hidden" name="id_pedido" value="' . $order["details"]["ST"]->order_number . '"  />';
-		// notificaÃ§Ã£o de pagamentos realizados
+		$html .= '<input type="hidden" name="id_pedido" value="' . $order["details"]["BT"]->order_number . '"  />';
 		$url_retorno = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginnotification') ;		
 		$html .= '<input type="hidden" name="url_retorno" value="' . $url_retorno . '"  />';
-		// url de redirecionamento do Pagamento Digital
 		$url_redirect = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
 		$html .= '<input type="hidden" name="redirect" value="' . $url_redirect . '"  />';
 		
@@ -174,40 +181,40 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		if ($db->f("order_tax") != 0.00) {
 			echo '<input type="hidden" name="acrescimo" value="'.$db->f("order_tax").'" />';
 		}
-		*/				
-		
-		// observacao do pedido 
-		$observacao;	
-		$html .= '<input type="hidden" name="free" value="'. $observacao .'" />';
-		
-		// campos do usuario
-		$zip = $order["details"]["ST"]->zip;
+		*/
+
+		$zip = $order["details"]["BT"]->zip;
 		$replacements = array(" ", ".", ",", "-", ";");	
 		$zip = str_replace($replacements, "", $zip);
 		
-		$html .= '<input type="hidden" name="nome" value="' . $order["details"]["ST"]->first_name . ' ' . $order["details"]["ST"]->last_name . '"  />
+		$html .= '<input type="hidden" name="nome" value="' . $order["details"]["BT"]->first_name . ' ' . $order["details"]["BT"]->last_name . '"  />
 		<input type="hidden" name="cep" value="' . $zip . '"  />
-		<input type="hidden" name="endereco" value="' . $order["details"]["ST"]->addres_1 . ',' . $order["details"]["ST"]->address_2 . '"  />
-		<input type="hidden" name="complemento" value=""  />
-		<input type="hidden" name="cidade" value="' . $order["details"]["ST"]->city . '"  />
-		<input type="hidden" name="estado" value="' . ShopFunctions::getStateByID($order["details"]["ST"]->virtuemart_state_id, "state_2_code") . '"  />
+		<input type="hidden" name="endereco" value="' . $order["details"]["BT"]->address_1 . (isset($order["details"]["BT"]->numero)?',' .$order["details"]["BT"]->numero:'') . '"  />
+		<input type="hidden" name="complemento" value="' . (isset($order["details"]["BT"]->address_2)?$order["details"]["BT"]->address_2:'') . '"  />
+		<input type="hidden" name="cidade" value="' . $order["details"]["BT"]->city . '"  />
+		<input type="hidden" name="estado" value="' . ShopFunctions::getStateByID($order["details"]["BT"]->virtuemart_state_id, "state_2_code") . '"  />
 		<input type="hidden" name="cliente_pais" value="BRA"  />
-		<input type="hidden" name="cliente_tel" value="' . $order["details"]["ST"]->phone_1 . '"  />
-		<input type="hidden" name="email" value="' . $order["details"]["ST"]->email . '"  />';
-		
-		// valor total do pedido		
+		<input type="hidden" name="cliente_tel" value="' . $order["details"]["BT"]->phone_1 . '"  />
+		<input type="hidden" name="email" value="' . $order["details"]["BT"]->email . '"  />';
+
+		if (isset($order["details"]["BT"]->cpf)) {
+			$html .= '<input type="hidden" name="cpf" value="' . $order["details"]["BT"]->cpf . '"  />';
+		}		
 		$html .= '<input type="hidden" name="valor" value="'.number_format(floatval($order['details']['BT']->order_total), 2, ".", "").'" />';
-		$html .= '<input type="hidden" name="tipo_frete" value="'.$method->tipo_frete .'" />';
+		$html .= '<input type="hidden" name="tipo_frete" value="'. strip_tags(str_replace('</span><span','</span> - <span',$cart->cartData['shipmentName'])) .'" />';
 		$html .= '<input type="hidden" name="frete" value="'.number_format($order["details"]["BT"]->order_shipment ,2,'.','').'" />';	
 	
+		if(!class_exists('VirtueMartModelCustomfields'))require(JPATH_VM_ADMINISTRATOR.DS.'models'.DS.'customfields.php');
+			
 		// peso do produto
-		// <input type="hidden" name="item_peso_' . $i . '" value="' . ShopFunctions::convertWeigthUnit($p->product_weight, $p->product_weight_uom, "GR") . '">';
-		foreach ($cart->products as $p) {
+		foreach ($order['items'] as $p) {
 			$i++;
-			$html .='<input type="hidden" name="produto_codigo_' . $i . '" value="' . $p->virtuemart_product_id . '">
-				<input type="hidden" name="produto_descricao_' . $i . '" value="' . $p->product_name . '">
-				<input type="hidden" name="produto_qtde_' . $i . '" value="' . $p->quantity . '">
-				<input type="hidden" name="produto_valor_' . $i . '" value="' . number_format($cart->pricesUnformatted[$p->virtuemart_product_id]['salesPrice'], 2, ".", "") .' ">';		
+			$product_attribute = strip_tags(VirtueMartModelCustomfields::CustomsFieldOrderDisplay($p,'FE'));
+			$html .='<input type="hidden" name="produto_codigo_' . $i . '" value="' . $p->order_item_sku . '">
+				<input type="hidden" name="produto_descricao_' . $i . '" value="' . $p->order_item_name . '">
+				<input type="hidden" name="produto_qtde_' . $i . '" value="' . $p->product_quantity . '">
+				<input type="hidden" name="produto_extra_' . $i . '" value="' . $product_attribute  . '">
+				<input type="hidden" name="produto_valor_' . $i . '" value="' . number_format($p->product_final_price, 2, ".", "") .' ">';		
 		}
 		
 		$url 	= JURI::root();
@@ -215,20 +222,17 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		$url_imagem_pagamento 	= $url_lib . 'imagens'.DS.'pagamentodigital.png';
 
 		// segundos para redirecionar para o Pagamento Digital
-		$segundos = $method->segundos_redirecionar;		
-		
-		$html .= '<br/><br/>Voc&egrave; ser&aacute; direcionado para a tela de pagamento em '.$segundos.' segundo(s), ou ent&atilde;o clique logo abaixo:<br />';
+		if ($redir) {
+			$segundos = $method->segundos_redirecionar;				
+			$html .= '<br/><br/>Voc&ecirc; ser&aacute; direcionado para a tela de pagamento em '.$segundos.' segundo(s), ou ent&atilde;o clique logo abaixo:<br />';
+			$html .= '<script>setTimeout(\'document.getElementById("pagdigital").submit();\','.$segundos.'000);</script>';
+		} 
 		$html .= '<div align="center"><br /><input type="image" value="Clique aqui para efetuar o pagamento" class="button" src="'.$url_imagem_pagamento.'" /></div>';
-		$html .= '<script>setTimeout(\'document.getElementById("pagdigital").submit();\','.$segundos.'000);</script>';
+					
 		$html .= '</form>';
-
-		JFactory::getApplication()->enqueueMessage(utf8_encode("Seu pedido foi realizado com sucesso. Você será direcionado para o site do Pagamento Digital, onde efetuará o pagamento da sua compra."));
-
-		$novo_status = $method->status_aguardando;
-		
-		return $this->processConfirmedOrderPaymentResponse(1, $cart, $order, $html, $dbValues['payment_name'], $novo_status);
-    }
-
+		return $html;
+	}
+	
     /**
      * Display stored payment data for an order
      *
@@ -276,7 +280,6 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
      */
     protected function checkConditions($cart, $method, $cart_prices) {
 
-// 		$params = new JParameter($payment->payment_params);
         $address = (($cart->ST == 0) ? $cart->BT : $cart->ST);
 
         $amount = $cart_prices['salesPrice'];
@@ -409,6 +412,24 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
      * @author Valerie Isaksen
      */
     public function plgVmOnShowOrderFEPayment($virtuemart_order_id, $virtuemart_paymentmethod_id, &$payment_name) {
+		
+		$orderModel = VmModel::getModel('orders');
+		$orderDetails = $orderModel->getOrder($virtuemart_order_id);
+		if (!($method = $this->getVmPluginMethod($orderDetails['details']['BT']->virtuemart_paymentmethod_id))) {
+			return false;
+		}
+		// somente retorna se estiver como transação pendente
+		if ($method->status_aguardando == $orderDetails['details']['BT']->order_status) {
+			
+			JFactory::getApplication()->enqueueMessage(utf8_encode(
+				"O pagamento deste pedido consta como Pendente de pagamento ainda. Clique pra  Voc&ecirc; ser&aacute; direcionado para o site do Pagamento Digital, onde efetuar&aacute; o pagamento da sua compra.")
+			);
+			
+			$redir = 0;
+			$html = $this->retornaHtmlPagamento( $orderDetails, $method, $redir );
+			echo $html;
+		}
+	
         $this->onShowOrderFE($virtuemart_order_id, $virtuemart_paymentmethod_id, $payment_name);
     }
 
