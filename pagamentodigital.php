@@ -44,7 +44,13 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             'status_aprovado'=> array('', 'char'),
             'status_cancelado'=> array('', 'char'),
             'status_aguardando'=> array('', 'char'),
-			'segundos_redirecionar'=> array('', 'string')            
+			'segundos_redirecionar'=> array('', 'string'),
+			'countries' => array('', 'char'),
+			'min_amount' => array('', 'int'),
+			'max_amount' => array('', 'int'),
+			'cost_per_transaction' => array('', 'int'),
+			'cost_percent_total' => array('', 'int'),
+			'tax_id' => array(0, 'int'),
         );
 
         $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
