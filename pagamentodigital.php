@@ -44,13 +44,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             'status_aprovado'=> array('', 'char'),
             'status_cancelado'=> array('', 'char'),
             'status_aguardando'=> array('', 'char'),
-			'segundos_redirecionar'=> array('', 'string'),
-			'countries' => array('', 'char'),
-			'min_amount' => array('', 'int'),
-			'max_amount' => array('', 'int'),
-			'cost_per_transaction' => array('', 'int'),
-			'cost_percent_total' => array('', 'int'),
-			'tax_id' => array(0, 'int'),
+			'segundos_redirecionar'=> array('', 'string')            
         );
 
         $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
@@ -162,8 +156,6 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
 		}
 
-		if (!class_exists('CurrencyDisplay')) require( JPATH_VM_ADMINISTRATOR . DS . 'helpers' . DS . 'currencydisplay.php' );
-		
         $currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
         $html .= $this->getHtmlRow('STANDARD_ORDER_NUMBER', $order['details']['BT']->order_number);
         $html .= $this->getHtmlRow('STANDARD_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
@@ -426,8 +418,10 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		if (!($method = $this->getVmPluginMethod($orderDetails['details']['BT']->virtuemart_paymentmethod_id))) {
 			return false;
 		}
+
+		$view = JRequest::getVar('view');
 		// somente retorna se estiver como transação pendente
-		if ($method->status_aguardando == $orderDetails['details']['BT']->order_status) {
+		if ($method->status_aguardando == $orderDetails['details']['BT']->order_status and $view == 'orders') {
 			
 			JFactory::getApplication()->enqueueMessage(utf8_encode(
 				"O pagamento deste pedido consta como Pendente de pagamento ainda. Clique pra  Voc&ecirc; ser&aacute; direcionado para o site do Pagamento Digital, onde efetuar&aacute; o pagamento da sua compra.")
@@ -728,28 +722,27 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 			$html = $this->_getPaymentResponseHtml($payment_data, $payment_name);
 
 			if ($virtuemart_order_id) {
+				// send the email ONLY if payment has been accepted
+				if (!class_exists('VirtueMartModelOrders'))
+					require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
 
-			// send the email ONLY if payment has been accepted
-			if (!class_exists('VirtueMartModelOrders'))
-				require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
-
-			$modelOrder = new VirtueMartModelOrders();
-			$orderitems = $modelOrder->getOrder($virtuemart_order_id);
-			$nb_history = count($orderitems['history']);
-			//vmdebug('history', $orderitems);
-			if (!class_exists('shopFunctionsF'))
-				require(JPATH_VM_SITE . DS . 'helpers' . DS . 'shopfunctionsf.php');
-			if ($nb_history == 1) {
+				$modelOrder = new VirtueMartModelOrders();
+				$orderitems = $modelOrder->getOrder($virtuemart_order_id);
+				$nb_history = count($orderitems['history']);
+				//vmdebug('history', $orderitems);
 				if (!class_exists('shopFunctionsF'))
-				require(JPATH_VM_SITE . DS . 'helpers' . DS . 'shopfunctionsf.php');
-				shopFunctionsF::sentOrderConfirmedEmail($orderitems);
-				$this->logInfo('plgVmOnPaymentResponseReceived, sentOrderConfirmedEmail ' . $order_number, 'message');
-				$order['order_status'] = $orderitems['items'][$nb_history - 1]->order_status;
-				$order['virtuemart_order_id'] = $virtuemart_order_id;
-				$order['customer_notified'] = 0;
-				$order['comments'] = JText::sprintf('VMPAYMENT_PAYPAL_EMAIL_SENT');
-				$modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, true);
-			}
+					require(JPATH_VM_SITE . DS . 'helpers' . DS . 'shopfunctionsf.php');
+				if ($nb_history == 1) {
+					if (!class_exists('shopFunctionsF'))
+					require(JPATH_VM_SITE . DS . 'helpers' . DS . 'shopfunctionsf.php');
+					shopFunctionsF::sentOrderConfirmedEmail($orderitems);
+					$this->logInfo('plgVmOnPaymentResponseReceived, sentOrderConfirmedEmail ' . $order_number, 'message');
+					$order['order_status'] = $orderitems['items'][$nb_history - 1]->order_status;
+					$order['virtuemart_order_id'] = $virtuemart_order_id;
+					$order['customer_notified'] = 0;
+					$order['comments'] = JText::sprintf('VMPAYMENT_PAYPAL_EMAIL_SENT');
+					$modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, true);
+				}
 			}
 		}
 		$cart = VirtueMartCart::getCart();
