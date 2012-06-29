@@ -136,6 +136,10 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
     }
 
 	function retornaHtmlPagamento( $order, $method, $redir ) {
+		$app =& JFactory::getApplication();
+		if($app->getName() != 'site') {
+			return true;
+		}
 		$lang = JFactory::getLanguage();
         $filename = 'com_virtuemart';
         $lang->load($filename, JPATH_ADMINISTRATOR);
@@ -155,7 +159,9 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
         if (!class_exists('VirtueMartModelCurrency')) {
             require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
 		}
-
+		if (!class_exists('CurrencyDisplay')) {
+			require(JPATH_VM_ADMINISTRATOR . DS . 'helpers' . DS . 'currencydisplay.php');
+		}
         $currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
         $html .= $this->getHtmlRow('STANDARD_ORDER_NUMBER', $order['details']['BT']->order_number);
         $html .= $this->getHtmlRow('STANDARD_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
