@@ -178,11 +178,13 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		$url_redirect = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
 		$html .= '<input type="hidden" name="redirect" value="' . $url_redirect . '"  />';
 		
-		/*	
+		
+
 		// Desconto do pedido
-		if ($db->f("order_discount") != 0.00) {
-			echo '<input type="hidden" name="desconto" value="'.$db->f("order_discount").'" />';    
-		}
+		$desconto_pedido = $order["details"]['BT']->coupon_discount + $order["details"]['BT']->order_discount;	
+		$html .= '<input type="hidden" name="desconto" value="'.$desconto_pedido.'" />';    
+
+		/*
 		// Desconto do pedido
 		if ($db->f("order_tax") != 0.00) {
 			echo '<input type="hidden" name="acrescimo" value="'.$db->f("order_tax").'" />';
