@@ -1,5 +1,4 @@
 <?php
-
 if (!defined('_VALID_MOS') && !defined('_JEXEC'))
     die('Direct Access to ' . basename(__FILE__) . ' is not allowed.');
 
@@ -44,7 +43,9 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             'status_aprovado'=> array('', 'char'),
             'status_cancelado'=> array('', 'char'),
             'status_aguardando'=> array('', 'char'),
-			'segundos_redirecionar'=> array('', 'string')            
+			'segundos_redirecionar'=> array('', 'int'),
+			'redirect_time'=> array('', 'int'),
+			'hash'=> array('', 'string'),
         );
 
         $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
@@ -173,24 +174,34 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		$html .= '<input type="hidden" name="chave" value="'.$method->chave.'"  />';
 		$html .= '<input name="tipo_integracao" type="hidden" value="PAD">';
 		$html .= '<input type="hidden" name="id_pedido" value="' . $order["details"]["BT"]->order_number . '"  />';
-		$url_retorno = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginnotification') ;		
+		$url_aviso = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginnotification') ;		
+		$html .= '<input type="hidden" name="url_aviso" value="' . $url_aviso . '"  />';
+		$url_retorno = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
 		$html .= '<input type="hidden" name="url_retorno" value="' . $url_retorno . '"  />';
-		$url_redirect = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
-		$html .= '<input type="hidden" name="redirect" value="' . $url_redirect . '"  />';
-		
-		
+		$html .= '<input type="hidden" name="redirect" value="true"  />';
+		$html .= '<input type="hidden" name="redirect_time" value="' . $method->redirect_time . '"  />';
 
-		// Desconto do pedido
-		$desconto_pedido = $order["details"]['BT']->coupon_discount + $order["details"]['BT']->order_discount;	
+		// Cupom de Desconto 
+		$desconto_pedido = $order["details"]['BT']->coupon_discount;	
 		$html .= '<input type="hidden" name="desconto" value="'.$desconto_pedido.'" />';    
 
+		if ($method->hash) {
+			if (isset($order["details"]["BT"]->razao_social)) {
+				$hash_razao = "&cliente_razao_social=".$order["details"]["BT"]->razao_social."";
+			}
+			if (isset($order["details"]["BT"]->cnpj)) {
+				$hash_cnpj = "&cliente_cnpj=".$order["details"]["BT"]->cpnj."";
+			}			
+			$hash = MD5("campanha=".$hash_cnpj."".$hash_razao."&cod_loja=".$method->cod_loja."&cpf=".$order["details"]["BT"]->cpf."&c_data_nascimento=&c_rg=&c_rg_emissao=&c_rg_orgao_emissor=&c_rg_estado_emissor=&email=".$order["details"]["BT"]->email."&email_loja=".$method->email_cobranca."id_pedido=".$order['details']['BT']->order_number."&numero_gerado=&ponto=&sexo=&tipo=cpf&tipo_conta=1TOKEN");
+			$html .= '<input type="hidden" name="hash" value="'.$hash.'" />';	
+		}
 		/*
 		// Desconto do pedido
 		if ($db->f("order_tax") != 0.00) {
 			echo '<input type="hidden" name="acrescimo" value="'.$db->f("order_tax").'" />';
 		}
 		*/
-
+		
 		$zip = $order["details"]["BT"]->zip;
 		$replacements = array(" ", ".", ",", "-", ";");	
 		$zip = str_replace($replacements, "", $zip);
@@ -208,6 +219,12 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		if (isset($order["details"]["BT"]->cpf)) {
 			$html .= '<input type="hidden" name="cpf" value="' . $order["details"]["BT"]->cpf . '"  />';
 		}		
+		if (isset($order["details"]["BT"]->cnpj)) {
+			$html .= '<input type="hidden" name="cliente_cnpj" value="' . $order["details"]["BT"]->cnpj . '"  />';
+		}
+		if (isset($order["details"]["BT"]->razao_social)) {
+			$html .= '<input type="hidden" name="cliente_razao_social" value="' . $order["details"]["BT"]->razao_social . '"  />';
+		}
 		$html .= '<input type="hidden" name="valor" value="'.number_format(floatval($order['details']['BT']->order_total), 2, ".", "").'" />';
 		$html .= '<input type="hidden" name="tipo_frete" value="'. strip_tags(str_replace('</span><span','</span> - <span',$cart->cartData['shipmentName'])) .'" />';
 		$html .= '<input type="hidden" name="frete" value="'.number_format($order["details"]["BT"]->order_shipment ,2,'.','').'" />';	
@@ -259,7 +276,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
             return '';
         }
         $this->getPaymentCurrency($paymentTable);
-
+		
         $html = '<table class="adminlist">' . "\n";
         $html .=$this->getHtmlHeaderBE();
         $html .= $this->getHtmlRowBE('STANDARD_PAYMENT_NAME', $paymentTable->payment_name);
@@ -432,7 +449,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		if ($method->status_aguardando == $orderDetails['details']['BT']->order_status and $view == 'orders') {
 			
 			JFactory::getApplication()->enqueueMessage(utf8_encode(
-				"O pagamento deste pedido consta como Pendente de pagamento ainda. Clique pra  Voc&ecirc; ser&aacute; direcionado para o site do Pagamento Digital, onde efetuar&aacute; o pagamento da sua compra.")
+				"O pagamento deste pedido consta como Pendente de pagamento ainda. Clique no botão abaixo para ser redirecionado para o Pagamento Digital, onde efetuar&aacute; o pagamento.")
 			);
 			
 			$redir = 0;
@@ -759,6 +776,29 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		$cart = VirtueMartCart::getCart();
 		$cart->emptyCart();
 		return true;
+		}
+		
+		/**
+		 * @param $pagamentoDigitalTable
+		 * @param $payment_name
+		 * @return string
+		 */
+		public function _getPaymentResponseHtml ($pagamentoDigitalTable, $payment_name) {
+			$html = '<table>' . "\n";
+			$html .= $this->getHtmlRow ('PAYPAL_PAYMENT_NAME', $payment_name);
+			if (!empty($pagamentoDigitalTable)) {
+				$html .= $this->getHtmlRow('PD_ID_TRANSACAO', $pagamentoDigitalTable['id_transacao']);
+				$html .= $this->getHtmlRow('PD_ID_PEDIDO', $pagamentoDigitalTable['id_pedido']);
+				$html .= $this->getHtmlRow('PD_DATA_TRANSACAO', $pagamentoDigitalTable['data_transacao']);
+				$html .= $this->getHtmlRow('PD_TOTAL', 'R$ '. number_format($pagamentoDigitalTable['valor_total'],2,',','.'));
+				$html .= $this->getHtmlRow('PD_TIPO_PAGAMENTO', utf8_encode($pagamentoDigitalTable['tipo_pagamento']));
+				$html .= $this->getHtmlRow('PD_PARCELAS', $pagamentoDigitalTable['parcelas']);				
+			}
+			$html .= '</table>' . "\n";
+			$link = '<br /><a href="'.JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=orders&layout=details&order_number='.$pagamentoDigitalTable['id_pedido']).'">Clique aqui para verificar os detalhes do seu pedido</a>';
+			$html .= $link;
+
+			return $html;
 		}
 		 
 }

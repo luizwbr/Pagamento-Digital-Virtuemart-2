@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <install version="1.5" type="plugin" group="vmpayment" method="upgrade">
     <name>Pagamento Digital</name>
-    <creationDate>Junho 2012</creationDate>
+    <creationDate>Agosto 2012</creationDate>
     <author>Luiz Felipe Weber</author>
     <authorUrl>http://www.weber.eti.br</authorUrl>
     <copyright>Copyright (C) 2012. All rights reserved.</copyright>
@@ -60,6 +60,12 @@
 		<param type="spacer" default="Configurações extras" />
 		<param name="limite_parcelamento" type="text" size="5"  label="Limite de Parcelamento" description="Limite de parcelamento para o usuário da loja pagar." />
 		<param name="segundos_redirecionar" type="text"  label="Segundos para Redirecionar Automaticamente" description="Segundos para Redirecionar automaticamente para o pagamento" size="2" default="5" />
+		<param name="redirect_time" type="text"  label="Segundos para Redirecionar no Retorno da Transação" description="Segundos para Redirecionar automaticamente na tela de retorno do pagamento" size="2" default="10" />
+		
+		<param name="hash" type="radio" default="0" label="Verificação extra de segurança ( hash )" description="Ativa ou não a verificação extra de segurança dos passados via formulário ao site do Pagamento Digital">
+			<option value="0">COM_VIRTUEMART_NO</option>
+			<option value="1">COM_VIRTUEMART_YES</option>
+		</param>	
 		
         <param type="spacer" default="Status postado pelo Pagamento Digital" />
         <param name="status_aprovado" type="vmorderstate" default="C" label="Aprovado" description="Status aprovado dentro do seu Virtuemart" />
