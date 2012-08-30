@@ -449,7 +449,7 @@ class plgVmPaymentPagamentodigital extends vmPSPlugin {
 		if ($method->status_aguardando == $orderDetails['details']['BT']->order_status and $view == 'orders') {
 			
 			JFactory::getApplication()->enqueueMessage(utf8_encode(
-				"O pagamento deste pedido consta como Pendente de pagamento ainda. Clique no botão abaixo para ser redirecionado para o Pagamento Digital, onde efetuar&aacute; o pagamento.")
+				"O pagamento deste pedido consta como Pendente de pagamento ainda. <br />Clique no bot&atilde;o abaixo para ser redirecionado para o Pagamento Digital, onde efetuar&aacute; o pagamento.")
 			);
 			
 			$redir = 0;
