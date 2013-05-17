@@ -3,10 +3,10 @@ if (!defined('_VALID_MOS') && !defined('_JEXEC'))
     die('Direct Access to ' . basename(__FILE__) . ' is not allowed.');
 
 /**
- * @version $Id: bcash.php,v 1.4 2005/05/27 19:33:57 ei
+ * @version $Id: bcash.php,v 1.7.1 2005/05/27 19:33:57 ei
  *
  * a special type of 'cash on delivey':
- * @author Max Milbers, ValÃ©rie Isaksen, Luiz Weber
+ * @author Max Milbers, Valérie Isaksen, Luiz Weber
  * @version $Id: bcash.php 5122 2012-02-07 12:00:00Z luizwbr $
  * @package VirtueMart
  * @subpackage payment
@@ -634,26 +634,32 @@ class plgVmPaymentBcash extends vmPSPlugin {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $urlPost); curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch,CURLOPT_POSTFIELDS,array("id_transacao"=>$transacaoId,"id_pedido"=>$pedidoId,"tipo_retorno"=>$tipoRetorno,"codificacao"=>$codificacao));
+        curl_setopt($ch, CURLOPT_POSTFIELDS,array("id_transacao"=>$transacaoId,"id_pedido"=>$pedidoId,"tipo_retorno"=>$tipoRetorno,"codificacao"=>$codificacao));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: Basic ".base64_encode($email. ":".$token)));
         $resposta = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         // faz a validação dos dados
+
+
         if($httpCode == "200") {
-            $bcash_status = $bcash_data['status'];
+            // pega os dados da transação por completo
+            $transacao_dados    = json_decode($resposta);
+            $meio_pagamento     = $transacao_dados->transacao->meio_pagamento;
+            $parcelas           = $transacao_dados->transacao->parcelas;
+
+            $bcash_status = $transacao_dados->transacao->status;//$bcash_data['status'];
             if ($bcash_status == 'Concluída') {
+                return false;
+            }
+
+            if ($bcash_status == 'Aprovada') {
                 $new_status = $method->status_aprovado;
             } elseif ($bcash_status == 'Cancelada') {
                 $new_status = $method->status_cancelado;    
             } else {
                 $new_status = $method->status_aguardando;
             }
-
-            // pega os dados da transação por completo
-            $transacao_dados    = json_decode($resposta);
-            $meio_pagamento     = $transacao_dados->transacao->meio_pagamento;
-            $parcelas           = $transacao_dados->transacao->parcelas;
 
             $this->logInfo('plgVmOnPaymentNotification return new_status:' . $new_status, 'message');
 
