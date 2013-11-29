@@ -184,7 +184,7 @@ class plgVmPaymentBcash extends vmPSPlugin {
         $html .= '<input type="hidden" name="redirect_time" value="' . $method->redirect_time . '"  />';
 
         // Cupom de Desconto 
-        $desconto_pedido = $order["details"]['BT']->coupon_discount;    
+        $desconto_pedido = $order["details"]['BT']->coupon_discount * -1;
         $html .= '<input type="hidden" name="desconto" value="'.$desconto_pedido.'" />';    
 
         /*
