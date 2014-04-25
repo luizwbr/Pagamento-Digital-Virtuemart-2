@@ -3,10 +3,10 @@ if (!defined('_VALID_MOS') && !defined('_JEXEC'))
     die('Direct Access to ' . basename(__FILE__) . ' is not allowed.');
 
 /**
- * @version $Id: bcash.php,v 1.7.1 2005/05/27 19:33:57 ei
+ * @version $Id: bcash.php,v 1.4 2005/05/27 19:33:57 ei
  *
  * a special type of 'cash on delivey':
- * @author Max Milbers, Valérie Isaksen, Luiz Weber
+ * @author Max Milbers, ValÃ©rie Isaksen, Luiz Weber
  * @version $Id: bcash.php 5122 2012-02-07 12:00:00Z luizwbr $
  * @package VirtueMart
  * @subpackage payment
@@ -35,23 +35,7 @@ class plgVmPaymentBcash extends vmPSPlugin {
 
         $this->_loggable = true;
         $this->tableFields = array_keys($this->getTableSQLFields());
-        $varsToPush = array('payment_logos' => array('', 'char'),
-            'email_cobranca' => array('', 'string'),
-            'cod_loja' => array('', 'string'),
-            'chave' => array('', 'string'),
-            'limite_parcelamento' => array('', 'int'),
-            'status_aprovado'=> array('', 'char'),
-            'status_cancelado'=> array('', 'char'),
-            'status_aguardando'=> array('', 'char'),
-            'segundos_redirecionar'=> array('', 'int'),
-            'redirect_time'=> array('', 'int'),
-            'campo_cpf' => array('', 'string'),         
-            'campo_cnpj' => array('', 'string'),         
-            'campo_razao_social' => array('', 'string'),         
-            'campo_bairro' => array('', 'string'),          
-            'campo_numero' => array('', 'string'),          
-        );
-
+        $varsToPush = $this->getVarsToPush ();        
         $this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
     }
     /**
@@ -68,7 +52,7 @@ class plgVmPaymentBcash extends vmPSPlugin {
      */
     function getTableSQLFields() {
         $SQLfields = array(
-            'id' => 'tinyint(1) unsigned NOT NULL AUTO_INCREMENT',
+            'id' => 'bigint(15) unsigned NOT NULL AUTO_INCREMENT',
             'virtuemart_order_id' => 'int(11) UNSIGNED DEFAULT NULL',
             'order_number' => 'char(32) DEFAULT NULL',
             'virtuemart_paymentmethod_id' => 'mediumint(1) UNSIGNED DEFAULT NULL',
@@ -165,6 +149,13 @@ class plgVmPaymentBcash extends vmPSPlugin {
         if (!class_exists('CurrencyDisplay')) {
             require(JPATH_VM_ADMINISTRATOR . DS . 'helpers' . DS . 'currencydisplay.php');
         }
+
+        if (isset($order["details"]["ST"]->zip)) {
+            $tipo_endereco = "ST";
+        } else {
+            $tipo_endereco = "BT";
+        }
+
         $currency = CurrencyDisplay::getInstance('', $order['details']['BT']->virtuemart_vendor_id);
         $html .= $this->getHtmlRow('STANDARD_ORDER_NUMBER', $order['details']['BT']->order_number);
         $html .= $this->getHtmlRow('STANDARD_AMOUNT', $currency->priceDisplay($order['details']['BT']->order_total));
@@ -184,7 +175,7 @@ class plgVmPaymentBcash extends vmPSPlugin {
         $html .= '<input type="hidden" name="redirect_time" value="' . $method->redirect_time . '"  />';
 
         // Cupom de Desconto 
-        $desconto_pedido = $order["details"]['BT']->coupon_discount * -1;
+        $desconto_pedido = $order["details"]['BT']->coupon_discount;    
         $html .= '<input type="hidden" name="desconto" value="'.$desconto_pedido.'" />';    
 
         /*
@@ -194,35 +185,38 @@ class plgVmPaymentBcash extends vmPSPlugin {
         }
         */
         
-        $zip = $order["details"]["BT"]->zip;
+        $zip = $order["details"][$tipo_endereco]->zip;
         $replacements = array(" ", ".", ",", "-", ";"); 
         $zip = str_replace($replacements, "", $zip);
+
+        $campo_cpf      = $method->campo_cpf;
+        $cpf_form       = $order["details"][$tipo_endereco]->$campo_cpf;
+        $cpf            = str_replace($replacements, "", $cpf_form);
         
         // configuração dos campos
-        $campo_cpf      = $method->campo_cpf;
         $campo_cnpj     = $method->campo_cnpj;
         $campo_razao_social = $method->campo_razao_social;
         $campo_numero   = $method->campo_numero;
         $campo_bairro   = $method->campo_bairro;
 
         // campos do usuário
-        $html .= '<input type="hidden" name="nome" value="' . $order["details"]["BT"]->first_name . ' ' . $order["details"]["BT"]->last_name . '"  />
+        $html .= '<input type="hidden" name="nome" value="' . $order["details"][$tipo_endereco]->first_name . ' ' . $order["details"][$tipo_endereco]->last_name . '"  />
         <input type="hidden" name="cep" value="' . $zip . '"  />
-        <input type="hidden" name="endereco" value="' . $order["details"]["BT"]->address_1 . (isset($order["details"]["BT"]->$campo_numero)?',' .$order["details"]["BT"]->$campo_numero:'') . '"  />
-        <input type="hidden" name="complemento" value="' . (isset($order["details"]["BT"]->address_2)?$order["details"]["BT"]->address_2:'') . '"  />
-        <input type="hidden" name="cidade" value="' . $order["details"]["BT"]->city . '"  />
-        <input type="hidden" name="estado" value="' . ShopFunctions::getStateByID($order["details"]["BT"]->virtuemart_state_id, "state_2_code") . '"  />
+        <input type="hidden" name="endereco" value="' . $order["details"][$tipo_endereco]->address_1 . (isset($order["details"][$tipo_endereco]->$campo_numero)?',' .$order["details"][$tipo_endereco]->$campo_numero:'') . '"  />
+        <input type="hidden" name="complemento" value="' . (isset($order["details"][$tipo_endereco]->address_2)?$order["details"][$tipo_endereco]->address_2:'') . '"  />
+        <input type="hidden" name="cidade" value="' . $order["details"][$tipo_endereco]->city . '"  />
+        <input type="hidden" name="estado" value="' . ShopFunctions::getStateByID($order["details"][$tipo_endereco]->virtuemart_state_id, "state_2_code") . '"  />
         <input type="hidden" name="cliente_pais" value="BRA" />
-        <input type="hidden" name="cliente_tel" value="' . $order["details"]["BT"]->phone_1 . '"  />
-        <input type="hidden" name="email" value="' . $order["details"]["BT"]->email . '"  />';
+        <input type="hidden" name="cliente_tel" value="' . $order["details"][$tipo_endereco]->phone_1 . '"  />
+        <input type="hidden" name="email" value="' . $order["details"][$tipo_endereco]->email . '"  />';
 
-        $html .= '<input type="hidden" name="cpf" value="' . $order["details"]["BT"]->$campo_cpf . '"  />';
+        $html .= '<input type="hidden" name="cpf" value="' . $cpf . '"  />';
         
-        if (isset($order["details"]["BT"]->$campo_cnpj)) {
-            $html .= '<input type="hidden" name="cliente_cnpj" value="' . $order["details"]["BT"]->$campo_cnpj . '"  />';
+        if (isset($order["details"][$tipo_endereco]->$campo_cnpj)) {
+            $html .= '<input type="hidden" name="cliente_cnpj" value="' . $order["details"][$tipo_endereco]->$campo_cnpj . '"  />';
         }
-        if (isset($order["details"]["BT"]->$campo_razao_social)) {
-            $html .= '<input type="hidden" name="cliente_razao_social" value="' . $order["details"]["BT"]->campo_razao_social . '"  />';
+        if (isset($order["details"][$tipo_endereco]->$campo_razao_social)) {
+            $html .= '<input type="hidden" name="cliente_razao_social" value="' . $order["details"][$tipo_endereco]->campo_razao_social . '"  />';
         }
 
         $html .= '<input type="hidden" name="valor" value="'.number_format(floatval($order['details']['BT']->order_total), 2, ".", "").'" />';
@@ -253,7 +247,7 @@ class plgVmPaymentBcash extends vmPSPlugin {
             $html .= '<br/><br/>'.JText::_('VMPAYMENT_B_MSG_REDIRECT2').'<br />';
             $html .= '<script>setTimeout(\'document.getElementById("bcash").submit();\','.$segundos.'000);</script>';
         } 
-        $html .= '<div align="center"><br /><input type="image" value="'.JText::_('VMPAYMENT_B_MSG_PAYMENT').'" class="button" src="'.$url_imagem_pagamento.'" /></div>';
+        $html .= '<div align="center"><br /><input type="image" value="'.JText::_('VMPAYMENT_B_MSG_PAYMENT').'" src="'.$url_imagem_pagamento.'" /></div>';
         $html .= '</form>';
         return $html;
     }
@@ -293,6 +287,107 @@ class plgVmPaymentBcash extends vmPSPlugin {
         }
         return ($method->cost_per_transaction + ($cart_prices['salesPrice'] * $cost_percent_total * 0.01));
     }
+   
+    function setCartPrices (VirtueMartCart $cart, &$cart_prices, $method) {
+
+        if ($method->modo_calculo_desconto == '2') {
+            return parent::setCartPrices($cart, &$cart_prices, $method);
+        } else {
+
+            if (!class_exists ('calculationHelper')) {
+                require(JPATH_VM_ADMINISTRATOR . DS . 'helpers' . DS . 'calculationh.php');
+            }
+            $_psType = ucfirst ($this->_psType);
+            $calculator = calculationHelper::getInstance ();
+
+            $cart_prices[$this->_psType . 'Value'] = $calculator->roundInternal ($this->getCosts ($cart, $method, $cart_prices), 'salesPrice');
+
+            /*
+            if($this->_psType=='payment'){
+                $cartTotalAmountOrig=$this->getCartAmount($cart_prices);
+                $cartTotalAmount=($cartTotalAmountOrig + $method->cost_per_transaction) / (1 -($method->cost_percent_total * 0.01));
+                $cart_prices[$this->_psType . 'Value'] = $cartTotalAmount - $cartTotalAmountOrig;
+            }
+            */
+
+            $taxrules = array();
+            if(isset($method->tax_id) and (int)$method->tax_id === -1){
+
+            } else if (!empty($method->tax_id)) {
+                $cart_prices[$this->_psType . '_calc_id'] = $method->tax_id;
+
+                $db = JFactory::getDBO ();
+                $q = 'SELECT * FROM #__virtuemart_calcs WHERE `virtuemart_calc_id`="' . $method->tax_id . '" ';
+                $db->setQuery ($q);
+                $taxrules = $db->loadAssocList ();
+
+                if(!empty($taxrules) ){
+                    foreach($taxrules as &$rule){
+                        if(!isset($rule['subTotal'])) $rule['subTotal'] = 0;
+                        if(!isset($rule['taxAmount'])) $rule['taxAmount'] = 0;
+                        $rule['subTotalOld'] = $rule['subTotal'];
+                        $rule['taxAmountOld'] = $rule['taxAmount'];
+                        $rule['taxAmount'] = 0;
+                        $rule['subTotal'] = $cart_prices[$this->_psType . 'Value'];
+                    }
+                }
+            } else {
+                $taxrules = array_merge($calculator->_cartData['VatTax'],$calculator->_cartData['taxRulesBill']);
+
+                if(!empty($taxrules) ){
+                    $denominator = 0.0;
+                    foreach($taxrules as &$rule){
+                        //$rule['numerator'] = $rule['calc_value']/100.0 * $rule['subTotal'];
+                        if(!isset($rule['subTotal'])) $rule['subTotal'] = 0;
+                        if(!isset($rule['taxAmount'])) $rule['taxAmount'] = 0;
+                        $denominator += ($rule['subTotal']-$rule['taxAmount']);
+                        $rule['subTotalOld'] = $rule['subTotal'];
+                        $rule['subTotal'] = 0;
+                        $rule['taxAmountOld'] = $rule['taxAmount'];
+                        $rule['taxAmount'] = 0;
+                        //$rule['subTotal'] = $cart_prices[$this->_psType . 'Value'];
+                    }
+                    if(empty($denominator)){
+                        $denominator = 1;
+                    }
+
+                    foreach($taxrules as &$rule){
+                        $frac = ($rule['subTotalOld']-$rule['taxAmountOld'])/$denominator;
+                        $rule['subTotal'] = $cart_prices[$this->_psType . 'Value'] * $frac;
+                        vmdebug('Part $denominator '.$denominator.' $frac '.$frac,$rule['subTotal']);
+                    }
+                }
+            }
+
+
+            if(empty($method->cost_per_transaction)) $method->cost_per_transaction = 0.0;
+            if(empty($method->cost_percent_total)) $method->cost_percent_total = 0.0;
+
+            if (count ($taxrules) > 0 ) {
+
+                $cart_prices['salesPrice' . $_psType] = $calculator->roundInternal ($calculator->executeCalculation ($taxrules, $cart_prices[$this->_psType . 'Value'],true,false), 'salesPrice');
+                //vmdebug('I am in '.get_class($this).' and have this rules now',$taxrules,$cart_prices[$this->_psType . 'Value'],$cart_prices['salesPrice' . $_psType]);
+                $cart_prices[$this->_psType . 'Tax'] = $calculator->roundInternal (($cart_prices['salesPrice' . $_psType] -  $cart_prices[$this->_psType . 'Value']), 'salesPrice');
+                reset($taxrules);
+                $taxrule =  current($taxrules);
+                $cart_prices[$this->_psType . '_calc_id'] = $taxrule['virtuemart_calc_id'];
+
+                foreach($taxrules as &$rule){
+                    if(isset($rule['subTotalOld'])) $rule['subTotal'] += $rule['subTotalOld'];
+                    if(isset($rule['taxAmountOld'])) $rule['taxAmount'] += $rule['taxAmountOld'];
+                }
+
+            } else {
+                $cart_prices['salesPrice' . $_psType] = $cart_prices[$this->_psType . 'Value'];
+                $cart_prices[$this->_psType . 'Tax'] = 0;
+                $cart_prices[$this->_psType . '_calc_id'] = 0;
+            }
+
+
+            return $cart_prices['salesPrice' . $_psType];
+        }
+    }
+
 
     /**
      * Check if the payment conditions are fulfilled for this payment method
@@ -634,32 +729,26 @@ class plgVmPaymentBcash extends vmPSPlugin {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $urlPost); curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS,array("id_transacao"=>$transacaoId,"id_pedido"=>$pedidoId,"tipo_retorno"=>$tipoRetorno,"codificacao"=>$codificacao));
+        curl_setopt($ch,CURLOPT_POSTFIELDS,array("id_transacao"=>$transacaoId,"id_pedido"=>$pedidoId,"tipo_retorno"=>$tipoRetorno,"codificacao"=>$codificacao));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: Basic ".base64_encode($email. ":".$token)));
         $resposta = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         // faz a validação dos dados
-
-
         if($httpCode == "200") {
-            // pega os dados da transação por completo
-            $transacao_dados    = json_decode($resposta);
-            $meio_pagamento     = $transacao_dados->transacao->meio_pagamento;
-            $parcelas           = $transacao_dados->transacao->parcelas;
-
-            $bcash_status = $transacao_dados->transacao->status;//$bcash_data['status'];
-            if ($bcash_status == 'Concluída') {
-                return false;
-            }
-
-            if ($bcash_status == 'Aprovada') {
+            $bcash_status = $bcash_data['status'];
+            if ($bcash_status == 'Aprovada' or $bcash_status == 'Concluída') {
                 $new_status = $method->status_aprovado;
             } elseif ($bcash_status == 'Cancelada') {
                 $new_status = $method->status_cancelado;    
             } else {
                 $new_status = $method->status_aguardando;
             }
+
+            // pega os dados da transação por completo
+            $transacao_dados    = json_decode($resposta);
+            $meio_pagamento     = $transacao_dados->transacao->meio_pagamento;
+            $parcelas           = $transacao_dados->transacao->parcelas;
 
             $this->logInfo('plgVmOnPaymentNotification return new_status:' . $new_status, 'message');
 
