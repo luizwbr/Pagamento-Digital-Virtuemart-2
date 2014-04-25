@@ -114,5 +114,5 @@
 		
 		<param type="vmabout" path="plugins/vmpayment/bcash/" />		
 		<param type="vmspacer" default="Licença: &lt;a href='http://www.gnu.org/licenses/gpl-3.0.html'&gt;GNU/GPL v3&lt;/a&gt; - Desenvolvido por Luiz Weber - &lt;a href='http://weber.eti.br'&gt;Weber TI&lt;/a&gt; | &lt;a href='http://webgenium.com.br'&gt;Webgenium System&lt;/a&gt;" />
-    </params>
+    </params> 
 </install>
