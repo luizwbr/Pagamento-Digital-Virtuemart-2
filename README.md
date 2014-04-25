@@ -1,4 +1,4 @@
-Pagamento-Digital-Virtuemart2
+Pagamento-Digital-Virtuemart2 ( Bcash )
 =============================
 
 Bcash para Virtuemart 2.0
